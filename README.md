@@ -10,6 +10,7 @@ The effective use of this package requires two things from users:
 - users must provide informative documentation (i.e., docstrings) for all functions and classes that they define.
 
 # Example Use cases
+## Information Look-Up through Chats in the Notebook
 
 # Conclusion
 
