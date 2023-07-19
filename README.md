@@ -47,6 +47,8 @@ Let's look at the degree distribution.
 ![degree distribution!](/images/degreeDistributionScreenShot.png)
 and use `%%explain` to get an explanation for the code
 ![explain!](/images/explainDemoScreenShot.png)
+Finally, does this sample of the Facebook social network exhibit the Friendship Paradox?
+![test friendship paradox!](/images/friendshipParadoxScreenShot.png "Friendship Paradox?")
 
 
 If you enjoy this package, then please check out my [website](https://sites.pitt.edu/~mrfrank/)
