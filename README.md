@@ -14,9 +14,8 @@ This package aims to make interactions with ChatGPT as seemless as possible from
 
 Users can interact with a Chat for Coding object programmatically.
 But the preferred way to use this package is through magic commands including `%%chat`, `%%code`, `%%fix`, and `%%explain`.
-For example, executing the following coding cell in a notebook will produce an interactive chat that ends when the user inputs "done".
-`%%chat
-In network science, what is the Freindship
+For example, executing the following coding cell in a notebook will produce an interactive chat that ends when the user inputs "done"; here is an example:
+![chat example!](/images/chatScreenShot.png "Interactive Chat in the Notebook")
 
 The effective use of this package requires two things from users:
 - users must provide their own OpenAI API key (add your key to the chatGPT.py file), and
