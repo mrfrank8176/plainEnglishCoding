@@ -31,17 +31,22 @@ produces the following output
 ![code result!](/images/codeResultScreenShot.png "Code result screenshot")
 The generated code imports required libraries that are not already imported, creates a brand new dataframe, and pulls in outside information about US population distributions.
 Coding prompts are aware of objects in Python's memory.
-In the following example, plainEnglishCoding is asked who is the "tallest" which requires the interpreter to realize the semantic connection to the "Height" column in the dataframe.
+In the following example, plainEnglishCoding is asked who is the "tallest" which requires `%%code` to realize the semantic connection to the "Height" column in the dataframe.
 ![object in memory!](/images/objectsInMemoryExampleScreenShot.png "Objects in memory example")
 More complicated inquires can be asked, for example, asking for statistical analysis of data.
-[!statsmodel example!](/images/statsmodelScreenShot.png "Statsmodel screenshot")
+![statsmodel example!](/images/statsmodelScreenShot.png "Statsmodel screenshot")
 Or, if you prefer using your own custom code, `%%code` command will use the documentation for user-defined functions and classes to create appropriate code.
 ![multiOLS!](/images/customMultiOlsScreenShot.png "Custom OLS screenshot")
 
-**Example Use: The Friendship Paradox**
+Here is another example using the Friendship Paradox.
 First of all, what is the Friendship Paradox?
 ![chat example!](/images/chatScreenShot.png "Interactive Chat in the Notebook")
-Now, let's get some social network data to test for this concept.
+Now, let's get some social network data to test for this concept; in this example, I ask `%%code` to download data from the [Stanford SNAP Project](http://snap.stanford.edu/) website.
+![build network!](/images/buildNetworkScreenShot.png "Build network screenshot")
+Let's look at the degree distribution.
+![degree distribution!](/images/degreeDistributionScreenShot.png)
+and use `%%explain` to get an explanation for the code
+![explain!](/images/explainDemoScreenShot.png)
 
 
 If you enjoy this package, then please check out my [website](https://sites.pitt.edu/~mrfrank/)
