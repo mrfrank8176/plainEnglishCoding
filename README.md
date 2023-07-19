@@ -12,6 +12,10 @@ This package aims to make interactions with ChatGPT as seemless as possible from
 - ability to fix broken code
 - ability to explain code
 
+The effective use of this package requires two things from users:
+- users must provide their own OpenAI API key (add your key to the chatGPT.py file), and
+- users must provide informative documentation (i.e., docstrings) for all functions and classes that they define.
+
 To use the package in an active Jupyter Lab or Notebook, first add the files chatGPT.py and plainEnglishCoding.py to your PYTHONPATH, and then import plainEnglishCoding into your session:
 ![import examp;ge!](images/importScreenShot.png "Import screenshot")
 
@@ -34,13 +38,10 @@ More complicated inquires can be asked, for example, asking for statistical anal
 Or, if you prefer using your own custom code, `%%code` command will use the documentation for user-defined functions and classes to create appropriate code.
 ![multiOLS!](/images/customMultiOlsScreenShot.png "Custom OLS screenshot")
 
-The effective use of this package requires two things from users:
-- users must provide their own OpenAI API key (add your key to the chatGPT.py file), and
-- users must provide informative documentation (i.e., docstrings) for all functions and classes that they define.
+**Example Use: The Friendship Paradox**
+First of all, what is the Friendship Paradox?
+![chat example!](/images/chatScreenShot.png "Interactive Chat in the Notebook")
+Now, let's get some social network data to test for this concept.
 
-# Example Use cases
-### Information Look-Up through Chats in the Notebook
-
-# Conclusion
 
 If you enjoy this package, then please check out my [website](https://sites.pitt.edu/~mrfrank/)
