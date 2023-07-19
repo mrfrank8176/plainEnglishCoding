@@ -14,12 +14,17 @@ This package aims to make interactions with ChatGPT as seemless as possible from
 
 To use the package in an active Jupyter Lab or Notebook, first add the files chatGPT.py and plainEnglishCoding.py to your PYTHONPATH, and then import plainEnglishCoding into your session:
 ![import examp;ge!](images/importScreenShot.png "Import screenshot")
+
 Users can interact with a Chat for Coding object programmatically.
 But the preferred way to use this package is through magic commands including `%%chat`, `%%code`, `%%fix`, and `%%explain`.
-For example, executing the following coding cell in a notebook will produce an interactive chat that ends when the user inputs "done"; here is an example:
+For example, executing the a coding cell with the magic command `%%chat` in a notebook will produce an interactive chat that ends when the user inputs "done"; here is an example:
 ![chat example!](/images/chatScreenShot.png "Interactive Chat in the Notebook")
 
-
+Coding prompts use the magic command `%%code` with an optional `-r` flag to automatically execute the generated code.
+For example, the following prompt
+![code prompt!](/images/codePromptScreenShot.png "Code prompt screenshot")
+produces the following output
+![code result!](/images/codeResultScreenShot.png "Code result screenshot")
 
 The effective use of this package requires two things from users:
 - users must provide their own OpenAI API key (add your key to the chatGPT.py file), and
