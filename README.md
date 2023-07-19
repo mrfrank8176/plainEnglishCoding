@@ -25,6 +25,14 @@ For example, the following prompt
 ![code prompt!](/images/codePromptScreenShot.png "Code prompt screenshot")
 produces the following output
 ![code result!](/images/codeResultScreenShot.png "Code result screenshot")
+The generated code imports required libraries that are not already imported, creates a brand new dataframe, and pulls in outside information about US population distributions.
+Coding prompts are aware of objects in Python's memory.
+In the following example, plainEnglishCoding is asked who is the "tallest" which requires the interpreter to realize the semantic connection to the "Height" column in the dataframe.
+![object in memory!](/images/objectsInMemoryExampleScreenShot.png "Objects in memory example")
+More complicated inquires can be asked, for example, asking for statistical analysis of data.
+[!statsmodel example!](/images/statsmodelScreenShot.png "Statsmodel screenshot")
+Or, if you prefer using your own custom code, `%%code` command will use the documentation for user-defined functions and classes to create appropriate code.
+![multiOLS!](/images/customMultiOlsScreenShot.png "Custom OLS screenshot")
 
 The effective use of this package requires two things from users:
 - users must provide their own OpenAI API key (add your key to the chatGPT.py file), and
