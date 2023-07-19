@@ -11,3 +11,6 @@ The effective use of this package requires two things from users:
 
 # Example Use cases
 
+# Conclusion
+
+If you enjoy this package, then please check out my [website](https://sites.pitt.edu/~mrfrank/)

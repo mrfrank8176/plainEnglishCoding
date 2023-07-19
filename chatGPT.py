@@ -1,14 +1,27 @@
-import openai,sys,re
+import openai,sys
+# import spacy
 import tiktoken # requies python3.9
 import pandas as pd
 import numpy as np
 from scipy.spatial.distance import cosine
-from sentence_transformers import SentenceTransformer
-from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+# from sentence_transformers import SentenceTransformer
+# from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 idx = pd.IndexSlice
 
 # Set up the OpenAI API client
-openai.api_key = 'YOUR_OPENAI_API_KEY''
+openai.api_key = 'OPENAI_API_KEY_HERE'
+
+
+# need something to check if pickle exists
+# DOC2VEC = pickle.load(open("gensim_doc2vec_text8.pickle",'rb'))
+# DOC2VEC = gensim.downloader.load("glove-wiki-gigaword-50")
+# try:
+#     DOC2VEC = spacy.load("en_core_web_lg")
+# except:
+#     print("SpaCy pretrained model en_core_web_lg is missing. Attempting to download for current and future use.")
+#     import os
+#     os.system("python3.9 -m spacy download en_core_web_lg")
+#     DOC2VEC = spacy.load("en_core_web_lg")
 
 def tokenize(s):
     """
@@ -33,6 +46,25 @@ def getTokenCount(s):
     :return: integer representing the number of tokens in s.
     """
     return len(tokenize(s))
+
+
+
+# def gensimEmbed(s):
+#     """
+#     Uses the OpenAI Embedding API to embed a string or list of strings and return Numpy array containing the vector embedding.
+#     This function used the 'text-embedding-ada-002' embedding model.
+#     :param s: str or list of strings or Pandas.DataFrame
+#     :param tokenLimit: int (optional). Default 8191. Represents the API token limit.
+#     :return: numpy.array representing the vector embedding of s
+#     """
+#     def query(s):
+#         return DOC2VEC(s).vector
+#     if type(s) == str:
+#         return query(s)
+#     # otherwise, s is a list of strings.
+#     if type(s) == list:
+#         return np.vstack([query(ss) for ss in s])
+#     return gensimEmbed(s["strings"].to_list())
 
 def openAiEmbed(s,tokenLimit=8191):
     """
@@ -87,30 +119,31 @@ def openAiEmbed(s,tokenLimit=8191):
     return embeddings
 
 # downloads a bunch of stuff on first use
-def embed_string_using_sbert(s: str or list) -> np.ndarray:
-    """
-    Embeds a string using SBERT after removing stop words.
-    :param s: str or list. A string or list of strings to be embedded
-    :return: Numpy array. Represents the SBERT embedding of s.
-    """
-    model = SentenceTransformer('distilbert-base-nli-mean-tokens')
-    def embed(s):
-        cleaned_s = " ".join([word for word in re.findall(r'\b\w+\b', s) if word.lower() not in ENGLISH_STOP_WORDS])
-        embedding = model.encode([cleaned_s])
-        return np.array(embedding)
-    if type(s) == str:
-        return embed(s)[0]
-    # otherwise, s is a list of strings
-    out = [embed(ss) for ss in s]
-    out = np.vstack(out)
-    return out
+# def embed_string_using_sbert(s: str or list):
+#     """
+#     Embeds a string using SBERT after removing stop words.
+#     :param s: str or list. A string or list of strings to be embedded
+#     :return: Numpy array. Represents the SBERT embedding of s.
+#     """
+#     model = SentenceTransformer('distilbert-base-nli-mean-tokens')
+#     def embed(s):
+#         cleaned_s = " ".join([word for word in re.findall(r'\b\w+\b', s) if word.lower() not in ENGLISH_STOP_WORDS])
+#         embedding = model.encode([cleaned_s])
+#         return np.array(embedding)
+#     if type(s) == str:
+#         return embed(s)[0]
+#     # otherwise, s is a list of strings
+#     out = [embed(ss) for ss in s]
+#     out = np.vstack(out)
+#     return out
     
 def embed(*args,**kwargs):
     """
     Wrapper function for the current embedding method.
     """
-    #return openAiEmbed(*args,**kwargs)
-    return embed_string_using_sbert(*args,**kwargs)
+    # return gensimEmbed(*args,**kwargs)
+    return openAiEmbed(*args,**kwargs)
+    # return embed_string_using_sbert(*args,**kwargs)
 
 
 def filterDataFrame(df,prompt,tokenAllowance,promptEmbed=None,):
@@ -128,7 +161,7 @@ def filterDataFrame(df,prompt,tokenAllowance,promptEmbed=None,):
         promptEmbed = embed(prompt)
     if df is None:
         df = self.conversation.copy()
-    print(promptEmbed)        
+    # print(promptEmbed)        
     df["distance"] = df["embedding"].apply(lambda e: cosine(e,promptEmbed))
     df = df.sort_values(by="distance",ascending=True)
     df["cum token count"] = np.cumsum(df["token count"])
@@ -140,8 +173,9 @@ class Conversation:
     Object for communicating with the OpenAI API while storing both prompts and responses.
     """
     def __init__(self,
-                 model="gpt-4-32k",
-                 #model="gpt-4",
+                 # model="gpt-4-32k",
+                 model="gpt-4",
+                 # model = "gpt-3.5-turbo",
                  verbose=False):
         """
         Returns an instance of the Conversation class.
@@ -166,6 +200,7 @@ class Conversation:
             "gpt-4":8000,
             "gpt-4-32k":32000,
             "gpt-3.5-turbo":4000,
+            "gpt-3.5-turbo-16k":16384,
         }
         self.tokenLimit = modelTokenLimits[model]
         self.model = model
@@ -266,13 +301,11 @@ class Conversation:
         return response
 
 
-def chatInteract(s=None):
+def chatInteract(user_input=None):
     C = Conversation()
     while True:
-        if s is None:
+        if user_input is None:
             user_input = input("\nYou: ")
-        else:
-            user_input = s
         if user_input.lower().strip() in ["done","stop","finish"]:
             break
         if "[use gpt-4]" in user_input:
@@ -282,7 +315,7 @@ def chatInteract(s=None):
         user_input = user_input.replace("[use gpt-4]","").replace("[use gpt-3]","")
         reply = C.queryApi(user_input)
         print("\n%s: %s" % (C.model,reply))
-        s = None
+        user_input = None
     
 
 if __name__ == "__main__":

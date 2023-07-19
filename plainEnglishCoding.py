@@ -89,7 +89,7 @@ def list_objects_in_memory(names=None):
             objectDescriptions.append({"name":name,"type":"class","description":s})
         elif isinstance(obj, (int, float, complex)):
             s = f"{name}: ({type(obj).__name__})"
-            s += " Value: %s" % str(obj)
+            s += " Value: %s\n" % str(obj)
             objectDescriptions.append({"name":name,"type":"numeric","description":s})
         else:
             # maybe an instance of a custom class.... maybe something generic like a list or dict
@@ -110,16 +110,15 @@ class gptCoder(Conversation):
     This class inherits from the Conversation class.
     Additional parameters: self.lastResponse (str) representing the last coding response from the API. Or None if no response has been received yet.
     """
-    def __init__(self,*args,**kwargs):
+    def __init__(self,*args,model="gpt-4",**kwargs):
         """
         Initialize the class.
         Passes *args and **kwargs to Conversation.__init__
         """
         self.lastResponse = ''
         self.lastCodingQuestion = ''
-        super().__init__(*args,**kwargs)
-        #self.setModel("gpt-4")
-        #self.setModel("gpt-3.5-turbo")
+        super().__init__(*args,model=model,**kwargs)
+        # self.setModel("gpt-3.5-turbo")
 
     def getPromptHeader(self):
         """
@@ -137,14 +136,14 @@ class gptCoder(Conversation):
             " - Only complete the code in the FOCAL CELL.\n"+\
             " - Make sure Python modules are not already imported in ACTIVE MEMORY before importing the module in your code.\n"+\
             " - Only put the completed code in a function if the user explicitly asks you to, otherwise just complete the code in the FOCAL CELL.\n"+\
-            " - Provide a docstring for any function you define in your code.\n"+\
+            " - Provide a docstring describing inputs and outputs for any function you define in your code.\n"+\
             " - Provide code that is intelligent, correct, efficient, and readable.\n"+\
             " - Keep your responses short and to the point.\n"+\
             " - Provide your code and completions. Never format your code as markdown code blocks.\n"+\
             " - Never ask the user for a follow up. Do not include pleasantries at the end of your response.\n" +\
             " - Never summarise the new code you wrote at the end of your response.\n"+\
             " - Do not wrap your code in a coding block. Your response should only contain code.\n"+\
-            "Here is what is in Python's ACTIVE MEMORY:\n"
+            "I will list each object in Python's ACTIVE MEMORY using '>>' and provide a description for each object:\n"
             # self.list_objects_in_memory(**kwargs)+\
             # "Focal cell:\n"+\
             # user_input
@@ -158,7 +157,7 @@ class gptCoder(Conversation):
         if not variables is None:
             variables = np.union1d(variables,list_module_names())
         memory = list_objects_in_memory(names=variables)
-        memory["description"] = memory["description"].apply(lambda s: " - %s" % s)
+        memory["description"] = memory["description"].apply(lambda s: " >> %s" % s)
         memory["token count"] = memory["description"].apply(getTokenCount)
         memory["role"] = "user"
         if self.tokenLimit > headerTokenCount+memory["token count"].sum()+promptTokenCount:
@@ -172,15 +171,28 @@ class gptCoder(Conversation):
             )
         else:
             if self.verbose:
-                print("Prompt will exceed token limit for API call. Need to filter to most semantically similar objects (+modules & classes) in memory")
+                print(
+                    "Prompt will exceed token limit for API call. "+\
+                    "Need to filter to most semantically similar objects (+modules & classes) in memory"
+                )
             memory = memory.reset_index()
+            # print(memory)
+            # print("+=++++++")
             #modulesInMemory = memory.loc[idx[:],["module","class"],:]
             #otherObjects = memory.drop(index=["module","class"],level="type")
-            modulesInMemory = memory[memory["type"].isin(["module","class"])]
-            otherObjects = memory[~memory["type"].isin(["module","class"])]
+            modulesInMemory = memory[memory["type"].isin(["module","class"])].copy()
+            modulesInMemory["description"] = modulesInMemory.apply(
+                lambda row: row["description"] if row["token count"] <= 500 else row["description"].split(":")[0],
+                axis=1
+            )
+            otherObjects = memory[~memory["type"].isin(["module","class"])].copy()
             tokenAllowance = self.tokenLimit - (headerTokenCount+modulesInMemory["token count"].sum()+promptTokenCount)
+            # print("remaining token allowance: %d" % tokenAllowance)
+            # print(otherObjects.head())
             embeddings = embed(otherObjects.rename(columns={"description":"strings"}))
+            # embeddings = embed(otherObjects["description"].to_list())
             otherObjects["embedding"] = [embeddings[i] for i in range(embeddings.shape[0])]
+            # otherObjects["embedding"] = otherObjects["description"].apply(embed)
             otherObjects = filterDataFrame(otherObjects,prompt,tokenAllowance,promptEmbed=None,)
             context = pd.concat(
                 [
@@ -194,7 +206,7 @@ class gptCoder(Conversation):
 
     def filterToCode(self,s):
         """
-        Looks for a ChatGPT style coding block in a string.
+        Looks for a ChatGPT style coding block in a string and filters the string to just the code.
         :param s: string
         :return: str
         """
@@ -211,7 +223,23 @@ class gptCoder(Conversation):
             print("After code filtering:")
             print(s)
         return s
-                
+    
+    def getFullPrompt(self,s,variables=None,header=None):
+        """
+        Combines input string with header string to produce a string that should be within token limits for the API call.
+        :param s: str
+        :param variables: list or None (optional). Default None. If list, then it should contain strings representing the names
+                                 of variables in active memory to be included in the API call.
+        :param header: str or None (optional). Default None. 
+        :return: str representing the string to be sent to the API
+        """
+        if header is None:
+            header = self.getPromptHeader()
+        context = self.getContext(s,header=header,variables=variables)
+        prompt = ''.join(context["content"].to_list()+[s,])
+        self.resetConversationHistory()
+        return prompt
+        
     def getCode(self,codingQuestion,variables=None,suppress=False):
         """
         Sends coding question to OpenAI Chat API while communicating Python objects in memory.
@@ -222,17 +250,15 @@ class gptCoder(Conversation):
         :param suppress: boolean (optional). Default False. Suppressing printing the response.
         :return: str. Response from OpenAI API
         """
-        header = self.getPromptHeader()
         self.lastCodingQuestion = codingQuestion
         codingQuestion = "FOCAL CELL:\n"+codingQuestion
-        context = self.getContext(codingQuestion,header=header,variables=variables)
-        prompt = ''.join(context["content"].to_list()+[codingQuestion,])
-        self.resetConversationHistory()
+        prompt = self.getFullPrompt(codingQuestion,variables)
         if self.verbose:
             print("Prompt to be sent to OpenAI Chat API:")
             print(prompt)
         response = self.queryApi(prompt)
         response = self.filterToCode(response)
+        response = response.strip()
         self.lastResponse = response
         if not suppress:
             print(response)
@@ -251,10 +277,9 @@ class gptCoder(Conversation):
             code = self.lastResponse
         prompt = "Explain the following code:\n%s" % code
         header = "Here is what is in Python's ACTIVE MEMORY:\n"
-        context = self.getContext(prompt,header=header,variables=variables)
-        prompt = ''.join(context["content"].to_list())+prompt
-        self.resetConversationHistory()
+        prompt = self.getFullPrompt(prompt,header=header)
         response = self.queryApi(prompt)
+        response = response.strip()
         if not suppress:
             print(response)
         return response
@@ -307,6 +332,7 @@ class gptCoder(Conversation):
         prompt = ''.join(context["content"].to_list())+prompt
         response = self.queryApi(prompt)
         response = self.filterToCode(response)
+        response = response.strip()
         for attempt in range(maxAttempts):
             if self.verbose:
                 print("Checking that response code runs without errors. Attempt %d (out of %d)" % (attempt,maxAttempts))
@@ -329,7 +355,6 @@ class gptCoder(Conversation):
                 prompt = ''.join(context["content"].to_list())+prompt
                 response = self.queryApi(prompt)
                 response = self.filterToCode(response)
-                response = response.strip()
         if not suppress:
             print(response)
         return response
@@ -404,17 +429,15 @@ class MyMagics(Magics):
 
     @cell_magic
     def chat(self,line,cell):
+        # global CHATBOT
+        # if "CHATBOT" not in list_object_names():
+        #     CHATBOT = Conversation()
+        # if "-reset" in line:
+        #     CHATBOT.resetConversationHistory()
+        # response = CHATBOT.queryApi(cell)
+        # chatHistory = ''.join(["%s: %s\n----\n" % (row["role"],row["content"]) for _,row in CHATBOT.conversation.iterrows()])
+        # print(chatHistory)
         chatInteract(cell)
-        """
-        global CHATBOT
-        if "CHATBOT" not in list_object_names():
-            CHATBOT = Conversation()
-        if "-reset" in line:
-            CHATBOT.resetConversationHistory()
-        response = CHATBOT.queryApi(cell)
-        chatHistory = ''.join(["%s: %s\n----\n" % (row["role"],row["content"]) for _,row in CHATBOT.conversation.iterrows()])
-        print(chatHistory)
-        """
         
 
 try:
